@@ -1,14 +1,15 @@
+using System;
 using System.Collections;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Networking;
 
 public class ResourceStructure : MonoBehaviour
 {
     [SerializeField] private GameObject ui;
-    private readonly string url = "http://127.0.0.1/edsa-webserver/town.php";
+    private readonly string upgradeURL = "http://127.0.0.1/edsa-webserver/town.php";
+    private readonly string collectURL = "http://127.0.0.1/edsa-webserver/resources.php";
     private int level = 1;
+
     private static string currentOpen = "";
 
     private void OnMouseDown()
@@ -22,7 +23,7 @@ public class ResourceStructure : MonoBehaviour
 
     public void GetResource(string resource)
     {
-        StartCoroutine(CollectResources.Collect(resource));
+        StartCoroutine(nameof(Collect), resource);
         Deselect();
     }
 
@@ -40,7 +41,6 @@ public class ResourceStructure : MonoBehaviour
 
     private IEnumerator Upgrade()
     {
-        Debug.Log(currentOpen);
         TownRequest req = new()
         {
             action = "upgrade",
@@ -48,22 +48,35 @@ public class ResourceStructure : MonoBehaviour
             token = UserLogin.MyToken
         };
 
-        string json = JsonUtility.ToJson(req);
-        List<IMultipartFormSection> form = new()
+        yield return StartCoroutine(Web.Request<TownRequest, TownResponse>(req, upgradeURL, response =>
         {
-            new MultipartFormDataSection("json", json)
+            if (response != null)
+            {
+                if (response.status)
+                    level = Convert.ToInt32(response.message);
+                else
+                    Debug.Log($"Failed to upgrade {currentOpen}. Message: {response.message}");
+            }
+        }));
+    }
+
+    private IEnumerator Collect(string resource)
+    {
+        CollectRequest req = new()
+        {
+            action = "collect-" + resource,
+            token = UserLogin.MyToken
         };
 
-        using UnityWebRequest webRequest = UnityWebRequest.Post(url, form);
-        webRequest.timeout = 10;
-        yield return webRequest.SendWebRequest();
-        TownResponse response = JsonUtility.FromJson<TownResponse>(json);
-
-        if (response.status)
+        yield return StartCoroutine(Web.Request<CollectRequest, CollectResponse>(req, collectURL, response =>
         {
-            Debug.Log(response.message);
-        }
-        else
-            Debug.Log($"Failed to upgrade {currentOpen}. Message: {response.message}");
+            if (response != null)
+            {
+                if (response.status)
+                    PlayerResources.Set(resource, response.newValue);
+                else
+                    Debug.Log($"Failed to collect {resource}. Message: {response.message}");
+            }
+        }));
     }
 }

@@ -1,68 +1,68 @@
-[System.Serializable]
-public struct RegisterRequest
+using System;
+
+[Serializable]
+public abstract class AbstractRequest
 {
     public string action;
+}
+
+[Serializable]
+public abstract class AbstractResponse
+{
+    public bool status;
+    public string message;
+}
+
+[Serializable]
+public class RegisterRequest : AbstractRequest
+{
     public string email;
     public string username;
     public string password;
 }
 
-[System.Serializable]
-public struct LoginRequest
+[Serializable]
+public class LoginRequest : AbstractRequest
 {
-    public string action;
     public string username;
     public string password;
 }
 
-[System.Serializable]
-public struct LoginResponse
+[Serializable]
+public class LoginResponse : AbstractResponse
 {
-    public bool status;
-    public string message;
     public string token;
 }
 
-[System.Serializable]
-public struct LogoutRequest
+[Serializable]
+public class LogoutRequest : AbstractRequest
 {
-    public string action;
     public string token;
 }
 
-[System.Serializable]
-public struct LogoutResponse
-{
-    public bool status;
-    public string message;
-}
+[Serializable]
+public class LogoutResponse : AbstractResponse
+{ }
 
-[System.Serializable]
-public struct CollectRequest
+[Serializable]
+public class CollectRequest : AbstractRequest
 {
-    public string action;
     public string token;
 }
 
-[System.Serializable]
-public struct CollectResponse
+[Serializable]
+public class CollectResponse : AbstractResponse
 {
-    public bool status;
-    public string message;
-    public int newGold;
+    public int newValue;
 }
 
-[System.Serializable]
-public struct TownRequest
+[Serializable]
+public class TownRequest : AbstractRequest
 {
-    public string action;
     public string upgrade;
     public string token;
 }
 
-[System.Serializable]
-public struct TownResponse
-{
-    public bool status;
-    public string message;
-}
+[Serializable]
+public class TownResponse : AbstractResponse
+{ }

@@ -65,11 +65,10 @@ public class UserLogin : MonoBehaviour
 
             if (validEmail)
             {
-                string uname = username.text;
-                string mail = email.text;
-                string pw = password.text;
+                string[] values = new string[3]
+                { username.text, email.text, password.text };
 
-                StartCoroutine(RegisterUser(uname, mail, pw));
+                StartCoroutine(nameof(RegisterUser), values);
             }
         });
 
@@ -90,10 +89,10 @@ public class UserLogin : MonoBehaviour
         submit.text = "Login";
         submit.RegisterCallback<ClickEvent>(evt =>
         {
-            string uname = username.text;
-            string pw = password.text;
+            string[] values = new string[2]
+            { username.text, password.text };
 
-            StartCoroutine(LoginUser(uname, pw));
+            StartCoroutine(nameof(LoginUser), values);
         });
         logout.text = "Logout";
         logout.RegisterCallback<ClickEvent>(evt =>
@@ -141,28 +140,16 @@ public class UserLogin : MonoBehaviour
             password = _password
         };
 
-        string json = JsonUtility.ToJson(req);
-        List<IMultipartFormSection> form = new()
+        yield return StartCoroutine(Web.Request<RegisterRequest, LoginResponse>(req, url, response =>
         {
-            new MultipartFormDataSection("json", json)
-        };
-
-        using UnityWebRequest webRequest = UnityWebRequest.Post(url, form);
-        webRequest.timeout = 10;
-        yield return webRequest.SendWebRequest();
-        LoginResponse response = JsonUtility.FromJson<LoginResponse>(webRequest.downloadHandler.text);
-
-        if (response.status)
-        {
-            MyToken = response.token;
-            Debug.Log("Registered successfully! Token: " + MyToken);
-        }
-        else
-            Debug.Log("Register error. Message: " + response.message);
+            if (response.status)
+                MyToken = response.token;
+            else
+                Debug.Log("Register error. Message: " + response.message);
+        }));
     }
 
-    // make private
-    public IEnumerator LoginUser(string _username, string _password)
+    private IEnumerator LoginUser(string _username, string _password)
     {
         LoginRequest req = new()
         {
@@ -171,25 +158,16 @@ public class UserLogin : MonoBehaviour
             password = _password
         };
 
-        string json = JsonUtility.ToJson(req);
-        List<IMultipartFormSection> form = new()
+        yield return StartCoroutine(Web.Request<LoginRequest, LoginResponse>(req, url, response =>
         {
-            new MultipartFormDataSection("json", json)
-        };
-
-        using UnityWebRequest webRequest = UnityWebRequest.Post(url, form);
-        webRequest.timeout = 10;
-        yield return webRequest.SendWebRequest();
-        Debug.Log(webRequest.downloadHandler.text);
-        LoginResponse response = JsonUtility.FromJson<LoginResponse>(webRequest.downloadHandler.text);
-
-        if (response.status)
-        {
-            MyToken = response.token;
-            Debug.Log("Login success! Token: " + MyToken);
-        }
-        else
-            Debug.Log("Login error. Message: " + response.message);
+            if (response != null)
+            {
+                if (response.status)
+                    MyToken = response.token;
+                else
+                    Debug.Log("Login error. Message: " + response.message);
+            }
+        }));
     }
 
     private IEnumerator LogoutUser()
@@ -200,24 +178,12 @@ public class UserLogin : MonoBehaviour
             token = MyToken
         };
 
-        string json = JsonUtility.ToJson(req);
-        List<IMultipartFormSection> form = new()
+        yield return StartCoroutine(Web.Request<LogoutRequest, LogoutResponse>(req, url, response =>
         {
-            new MultipartFormDataSection("json", json)
-        };
-
-        using UnityWebRequest webRequest = UnityWebRequest.Post(url, form);
-        webRequest.timeout = 10;
-        yield return webRequest.SendWebRequest();
-        Debug.Log(webRequest.downloadHandler.text);
-        LogoutResponse response = JsonUtility.FromJson<LogoutResponse>(webRequest.downloadHandler.text);
-
-        if (response.status)
-        {
-            MyToken = "";
-            Debug.Log("Logout successfull!");
-        }
-        else
-            Debug.Log("Logout error. Message: " + response.message);
+            if (response.status)
+                MyToken = "";
+            else
+                Debug.Log("Logout error. Message: " + response.message);
+        }));
     }
 }
